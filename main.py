@@ -29,7 +29,7 @@ class Game:
         self.font = pg.font.SysFont(None, 36)  # Default font, size 36
 
         # Create a Pymunk space with gravity
-        self.current_level = 0
+        self.current_level = 3
         self.level_complete = False
         self.space = pymunk.Space()
         self.space.gravity = (0, -4.8)  # Gravity pointing downwards in Pymunk's coordinate system
@@ -260,7 +260,10 @@ class Game:
                     self.message_display.show_message("You Win!", 5)  # End of game message
                     pg.time.set_timer(EXIT_APP, 5000)  # Quit game after 5 seconds
                 else:
-                    self.message_display.show_message(f"Level {self.current_level} Start!", 2)
+                    if self.current_level == 3 :
+                        self.message_display.show_message(f"Level {self.current_level} Start! PINK Is Bouncy !!", 2)
+                    else:
+                        self.message_display.show_message(f"Level {self.current_level} Start!", 2)
                     
     def run(self):
         '''Run the main game loop'''
