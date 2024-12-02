@@ -17,6 +17,8 @@ import sugar_grain
 import bucket
 import level
 import message_display
+import static_bucket
+
 
 class Game:
     def __init__(self) -> None:
@@ -30,15 +32,23 @@ class Game:
 
         # Create a Pymunk space with gravity
         self.current_level = 3
+        
+       
+        # Make current position of spout
+        self.current_spout = 0
         self.level_complete = False
         self.space = pymunk.Space()
         self.space.gravity = (0, -4.8)  # Gravity pointing downwards in Pymunk's coordinate system
         # Iterations defaults to 10. Higher is more accurate collison detection
         self.space.iterations = 30 
-
+        self.is_paused = False
         self.drawing_lines = []
         self.sugar_grains = []
         self.buckets = []
+        # Define Static Bucket
+        self.Static_buckets = []
+        # Define Multiple Spout
+        self.Multiple_spout = []
         self.statics = []
         self.total_sugar_count = None
         self.level_spout_position = None
@@ -65,10 +75,15 @@ class Game:
             item.delete() 
         for item in self.statics:
             item.delete() 
+        for item in self.Multiple_spout:
+            item.delete()
+        
         self.sugar_grains = []
         self.drawing_lines = []  # Clear the list
         self.buckets = []
         self.statics = []
+        self.Static_buckets = []
+        self.Multiple_spout = []
  
         new_level = LEVEL_FILE_NAME.replace("X", str(levelnumber))
         self.level = level.Level(new_level)
@@ -78,12 +93,18 @@ class Game:
             return False
         else:  # Do final steps to start the level
             self.level_grain_dropping = False
-            self.level_spout_position = (self.level.data['spout_x'], self.level.data['spout_y'])
+            #self.level_spout_position = (self.level.data['spout_x'], self.level.data['spout_y'])
             self.build_main_walls()
 
             # Load buckets
             for nb in self.level.data['buckets']:
                 self.buckets.append(bucket.Bucket(self.space, nb['x'], nb['y'], nb['width'], nb['height'], nb['needed_sugar']))
+            # Load static buckets
+            for nb in self.level.data["Static_buckets"]:
+                self.Static_buckets.append(static_bucket.Static_Bucket(self.space, nb['x'], nb['y'], nb['width'], nb['height']))
+            # Load Multiple Spout
+            for nb in self.level.data["Multiple_Spout"]:
+                self.Multiple_spout.append((nb['x'], nb['y']))
             # Load static items
             for nb in self.level.data['statics']:
                 self.statics.append(static_item.StaticItem(self.space, nb['x1'], nb['y1'], nb['x2'], nb['y2'], nb['color'], nb['line_width'], nb['friction'], nb['restitution']))
@@ -91,6 +112,7 @@ class Game:
             pg.time.set_timer(START_FLOW, 5 * 1000)  # 5 seconds
             self.message_display.show_message("Level Up", 10)
             self.level_complete = False
+            #self.sound
             return True
 
     def build_main_walls(self):
@@ -116,6 +138,10 @@ class Game:
 
     def update(self):
         '''Update the program physics'''
+
+        if self.is_paused:
+            return
+        
         # Keep an overall iterator
         self.iter += 1
         
@@ -159,11 +185,20 @@ class Game:
             # Drop sugar if needed
             if self.level_grain_dropping:
                 # Create new sugar to drop
-                new_sugar = sugar_grain.sugar_grain(self.space, self.level_spout_position[0], self.level_spout_position[1], 0.1)
+                new_sugar = sugar_grain.sugar_grain(self.space, self.Multiple_spout[self.current_spout][0], self.Multiple_spout[self.current_spout][1], 0.1)
                 self.sugar_grains.append(new_sugar)
                 # Check if it's time to stop
                 if len(self.sugar_grains) >= self.total_sugar_count:
                     self.level_grain_dropping = False
+            
+            counter = {self.total_sugar_count - len(self.sugar_grains)}
+            
+            if self.current_spout == len(self.Multiple_spout):
+                self.current_spout += 0
+            else:
+                if counter == 0:
+                    self.current_spout += 1
+                
 
     def draw_hud(self):
         """Draw the HUD displaying the number of grains."""
@@ -184,6 +219,14 @@ class Game:
     
         for bucket in self.buckets:
             bucket.draw(self.screen)
+
+        for Static_bucket in self.Static_buckets:
+            Static_bucket.draw(self.screen)
+        
+        # Draw Multiple Spout
+        #for Multiple_spout in self.Multiple_spout:
+            #Multiple_spout.draw(self.screen)
+
 
         # Draw each sugar grain
         for grain in self.sugar_grains:
@@ -206,8 +249,8 @@ class Game:
             pg.draw.line(
                 self.screen, 
                 (255, 165, 144), 
-                (self.level_spout_position[0], HEIGHT - self.level_spout_position[1] - 10), 
-                (self.level_spout_position[0], HEIGHT - self.level_spout_position[1]), 
+                (self.Multiple_spout[self.current_spout][0], self.Multiple_spout[self.current_spout][1] - 10), 
+                (self.Multiple_spout[self.current_spout][0], HEIGHT - self.Multiple_spout[self.current_spout][1]), 
                 5
             )
         
@@ -226,6 +269,22 @@ class Game:
             if event.type == EXIT_APP or event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
                 pg.quit()
                 sys.exit()
+            # IMPLEMENTING NORMAL GRAVITY
+            elif event.type == pg.KEYDOWN and event.key == pg.K_UP:
+                self.space.gravity = (0, 9.8)
+                self.message_display.show_message("REVERSE GRAVITY!", 1)
+            # IMPLEMENTING REVERSE GRAVITY
+            elif event.type == pg.KEYDOWN and event.key == pg.K_DOWN:
+                self.space.gravity = (0,-9.8)
+                self.message_display.show_message("NORMAL GRAVITY!", 1)
+             # Implementing a Restart
+            elif event.type == pg.KEYDOWN and event.key == pg.K_r:
+                self.current_level -=1
+                pg.time.set_timer(LOAD_NEW_LEVEL,100)
+            # Implementing a pause
+            elif event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
+                self.is_paused = not self.is_paused
+                self.message_display.show_message("PAUSED!", 1)
             elif event.type == pg.MOUSEBUTTONDOWN:
                 self.mouse_down = True
                 # Get mouse position and start a new dynamic line

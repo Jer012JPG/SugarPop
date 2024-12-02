@@ -21,6 +21,8 @@ class Level:
             "number_sugar_grains": 0,
             "static_boxes": [],
             "buckets": [],
+            "Static_buckets":[],
+            "Multiple_Spout":[],
             "time_to_complete_level": 0,
         }
         
@@ -70,6 +72,15 @@ class Level:
             "height": height
         })
 
+    def add_Multiple_Spout(self, x, y):
+        """
+        Add a static box to the level.
+        """
+        self.data["Multiple_Spout"].append({
+            "x": x,
+            "y": y
+        })
+
     def add_bucket(self, x, y, width, height, number_sugar_grains):
         """
         Add a bucket to the level.
@@ -80,6 +91,17 @@ class Level:
             "width": width,
             "height": height,
             "needed_sugar": needed_sugar
+        })
+
+    def add_static_buckets(self, x, y, width, height):
+        """
+        Add a bucket to the level.
+        """
+        self.data["Static_buckets"].append({
+            "x": x,
+            "y": y,
+            "width": width,
+            "height": height,
         })
 
     def set_number_sugar_grains(self, count):

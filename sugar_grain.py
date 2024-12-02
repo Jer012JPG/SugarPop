@@ -68,3 +68,5 @@ class sugar_grain:
         Remove the sugar grain from the Pymunk space.
         """
         self.space.remove(self.body, self.shape)
+
+    
