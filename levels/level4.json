@@ -295,7 +295,7 @@
             "y": 800,
             "width": 70,
             "height": 90,
-            "needed_sugar": 5
+            "needed_sugar": 20
         }
     ],
     "Static_buckets":[
@@ -314,8 +314,8 @@
     ],
     "Multiple_Spout":[
         {
-            "x": 700,
-            "y": 800
+            "x": 750,
+            "y": 1000
         
         },
         {

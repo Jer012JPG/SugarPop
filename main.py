@@ -19,6 +19,7 @@ import level
 import message_display
 import static_bucket
 import sound
+import HUD
 
 
 class Game:
@@ -34,8 +35,10 @@ class Game:
         # Create a Pymunk space with gravity
         self.current_level = 3
         
-        # Create
+        # Create sound
         self.sound = sound.Sound()
+        # Initialize HUD
+        
         # Make current position of spout
         self.current_spout = 0
         self.level_complete = False
@@ -77,8 +80,8 @@ class Game:
             item.delete() 
         for item in self.statics:
             item.delete() 
-        for item in self.Multiple_spout:
-            item.delete()
+        #for item in self.Multiple_spout:
+            #item.delete()
         
         self.sugar_grains = []
         self.drawing_lines = []  # Clear the list
@@ -102,11 +105,12 @@ class Game:
             for nb in self.level.data['buckets']:
                 self.buckets.append(bucket.Bucket(self.space, nb['x'], nb['y'], nb['width'], nb['height'], nb['needed_sugar']))
             # Load static buckets
-            for nb in self.level.data["Static_buckets"]:
-                self.Static_buckets.append(static_bucket.Static_Bucket(self.space, nb['x'], nb['y'], nb['width'], nb['height']))
-            # Load Multiple Spout
-            for nb in self.level.data["Multiple_Spout"]:
-                self.Multiple_spout.append((nb['x'], nb['y']))
+            if self.current_level == 4:
+                for nb in self.level.data["Static_buckets"]:
+                    self.Static_buckets.append(static_bucket.Static_Bucket(self.space, nb['x'], nb['y'], nb['width'], nb['height']))
+                # Load Multiple Spout
+                for nb in self.level.data["Multiple_Spout"]:
+                    self.Multiple_spout.append((nb['x'], nb['y']))
             # Load static items
             for nb in self.level.data['statics']:
                 self.statics.append(static_item.StaticItem(self.space, nb['x1'], nb['y1'], nb['x2'], nb['y2'], nb['color'], nb['line_width'], nb['friction'], nb['restitution']))
@@ -189,9 +193,13 @@ class Game:
                 
             # Drop sugar if needed
             if self.level_grain_dropping:
-                # Create new sugar to drop
-                new_sugar = sugar_grain.sugar_grain(self.space, self.Multiple_spout[self.current_spout][0], self.Multiple_spout[self.current_spout][1], 0.1)
-                self.sugar_grains.append(new_sugar)
+                if self.current_level == 4:
+                    # Create new sugar to drop
+                    new_sugar = sugar_grain.sugar_grain(self.space, self.Multiple_spout[self.current_spout][0], self.Multiple_spout[self.current_spout][1], 0.1)
+                    self.sugar_grains.append(new_sugar)
+                else:
+                    new_sugar = sugar_grain.sugar_grain(self.space, self.level.data("spout_x"), self.level.data("spout_y"), 0.1)
+                    self.sugar_grains.append(new_sugar)
                 # Check if it's time to stop
                 if len(self.sugar_grains) >= self.total_sugar_count:
                     self.level_grain_dropping = False
@@ -205,9 +213,22 @@ class Game:
         """Draw the HUD displaying the number of grains."""
         # Prepare the text surface
         if self.total_sugar_count:
+
+            level_surface = self.font.render(f'Level{self.current_level}', True, (255, 255, 255))
             text_surface = self.font.render(f'{self.total_sugar_count - len(self.sugar_grains)}', True, (255, 255, 255))
-            # Draw the text surface on the screen
-            self.screen.blit(text_surface, (10, 10))  # Position at top-left corner
+            
+            for i in range(len(self.buckets)-1, -1, -1):
+                bucket = self.buckets[i]
+                bucket_count = self.font.render(f'{bucket.count}', True, (255, 255, 255))
+                for nb in self.level.data['buckets']:
+                    self.screen.blit(bucket_count,(nb["x"], nb["y"]))
+            #Draw the text surface on the screen
+            self.screen.blit(text_surface, (10, 40)) # sugar count left
+            self.screen.blit(level_surface,(10,10)) #Level
+            
+      
+        
+            
 
     def draw(self):
         '''Draw the overall game. Should call individual item draw() methods'''
