@@ -18,6 +18,7 @@ import bucket
 import level
 import message_display
 import static_bucket
+import sound
 
 
 class Game:
@@ -33,7 +34,8 @@ class Game:
         # Create a Pymunk space with gravity
         self.current_level = 3
         
-       
+        # Create
+        self.sound = sound.Sound()
         # Make current position of spout
         self.current_spout = 0
         self.level_complete = False
@@ -62,7 +64,7 @@ class Game:
         # Get new height based on correct scale
         scale_height = self.intro_image.get_height() * WIDTH / self.intro_image.get_width()
         self.intro_image = pg.transform.scale(self.intro_image, (WIDTH, int(scale_height)))  # Scale to screen resolution
-        
+        self.sound.play_background_music()
         pg.time.set_timer(LOAD_NEW_LEVEL, 2000)  # Load in 2 seconds
 
     def load_level(self, levelnumber=0):
@@ -167,15 +169,18 @@ class Game:
             
             # Calculate buckets count by counting each grain's position
             # First, explode or reset the counter on each bucket
-            for bucket in self.buckets:
-                if bucket.count >= bucket.needed_sugar:
-                    bucket.explode(self.sugar_grains)
+            for i in range(len(self.buckets)-1, -1, -1):
+               bucket = self.buckets[i]
+               if bucket.count >= bucket.needed_sugar:
+                   bucket.explode(self.sugar_grains)
+                   self.sound.play_bucket_explosion()
+                   del self.buckets[i]
                     # If all the buckets are gone, level up!
-                    if not self.level_complete and self.check_all_buckets_exploded():
+                   if not self.level_complete and self.check_all_buckets_exploded():
                         self.level_complete = True
                         self.message_display.show_message("Level Complete!", 2)
                         pg.time.set_timer(LOAD_NEW_LEVEL, 2000)  # Schedule next level load
-                else:
+                   else:
                     bucket.count_reset()
             # Count the grains in the un-exploded buckets
             for grain in self.sugar_grains:
@@ -191,13 +196,9 @@ class Game:
                 if len(self.sugar_grains) >= self.total_sugar_count:
                     self.level_grain_dropping = False
             
-            counter = {self.total_sugar_count - len(self.sugar_grains)}
+         
             
-            if self.current_spout == len(self.Multiple_spout):
-                self.current_spout += 0
-            else:
-                if counter == 0:
-                    self.current_spout += 1
+          
                 
 
     def draw_hud(self):
@@ -337,3 +338,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
