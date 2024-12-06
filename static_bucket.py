@@ -2,6 +2,7 @@ import pygame as pg
 import pymunk
 from settings import SCALE, HEIGHT, WIDTH
 from math import sqrt
+import sound
 
 class Static_Bucket:
     def __init__(self, space, x, y, width, height):
@@ -19,7 +20,7 @@ class Static_Bucket:
         self.width = width / SCALE
         self.height = height / SCALE
         self.count = 0  # Counter for collected sugar grains
-        
+        self.sound = sound.Sound()
 
         wall_thickness = 0.2  # Thickness of the walls in physics units
 
@@ -89,6 +90,7 @@ class Static_Bucket:
         # Check if the grain's position is within the bucket's bounding box
         if left <= grain_pos.x <= right and bottom <= grain_pos.y <= top:
             self.count += 1
+            self.sound.play_bucket_in_sound()
             return True  # Indicate that the grain was collected
 
         return False  # Grain not collected

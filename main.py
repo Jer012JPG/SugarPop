@@ -181,7 +181,9 @@ class Game:
                    del self.buckets[i]
                     # If all the buckets are gone, level up!
                    if not self.level_complete and self.check_all_buckets_exploded():
+                        self.sound.play_level_win_sound()
                         self.level_complete = True
+                        
                         self.message_display.show_message("Level Complete!", 2)
                         pg.time.set_timer(LOAD_NEW_LEVEL, 2000)  # Schedule next level load
                    else:
@@ -197,8 +199,11 @@ class Game:
                     # Create new sugar to drop
                     new_sugar = sugar_grain.sugar_grain(self.space, self.Multiple_spout[self.current_spout][0], self.Multiple_spout[self.current_spout][1], 0.1)
                     self.sugar_grains.append(new_sugar)
+                    if (self.total_sugar_count - len(self.sugar_grains)) == 0 :
+                        self.current_spout += 1
+
                 else:
-                    new_sugar = sugar_grain.sugar_grain(self.space, self.level.data("spout_x"), self.level.data("spout_y"), 0.1)
+                    new_sugar = sugar_grain.sugar_grain(self.space, self.level.data["spout_x"], self.level.data["spout_y"], 0.1)
                     self.sugar_grains.append(new_sugar)
                 # Check if it's time to stop
                 if len(self.sugar_grains) >= self.total_sugar_count:
@@ -206,14 +211,11 @@ class Game:
             
          
             
-          
-                
-
+    
     def draw_hud(self):
         """Draw the HUD displaying the number of grains."""
         # Prepare the text surface
         if self.total_sugar_count:
-
             level_surface = self.font.render(f'Level{self.current_level}', True, (255, 255, 255))
             text_surface = self.font.render(f'{self.total_sugar_count - len(self.sugar_grains)}', True, (255, 255, 255))
             
@@ -221,8 +223,16 @@ class Game:
                 bucket = self.buckets[i]
                 bucket_count = self.font.render(f'{bucket.count}', True, (255, 255, 255))
                 for nb in self.level.data['buckets']:
-                    self.screen.blit(bucket_count,(nb["x"], nb["y"]))
-            #Draw the text surface on the screen
+                    self.screen.blit(bucket_count,(nb["x"], HEIGHT- nb["y"]))
+
+            for i in range(len(self.Static_buckets)-1, -1, -1):
+                bucket = self.Static_buckets[i]
+                bucket_count = self.font.render(f'{bucket.count}', True, (255, 255, 255))
+                for nb in self.level.data['Static_buckets']:
+                    self.screen.blit(bucket_count,(nb["x"], HEIGHT- nb["y"]))
+
+
+            # Draw the text surface on the screen
             self.screen.blit(text_surface, (10, 40)) # sugar count left
             self.screen.blit(level_surface,(10,10)) #Level
             
@@ -270,11 +280,10 @@ class Game:
         if self.level_spout_position:
             pg.draw.line(
                 self.screen, 
-                (255, 165, 144), 
+                (255, 265, 265), 
                 (self.Multiple_spout[self.current_spout][0], self.Multiple_spout[self.current_spout][1] - 10), 
                 (self.Multiple_spout[self.current_spout][0], HEIGHT - self.Multiple_spout[self.current_spout][1]), 
-                5
-            )
+                10)
         
         # Draw the heads-up display
         self.draw_hud()
