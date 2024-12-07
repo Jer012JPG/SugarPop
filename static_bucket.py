@@ -76,11 +76,8 @@ class Static_Bucket:
         
         :param sugar_grain: The sugar grain to check.
         """
-        if self.exploded:
-            return  # Don't count grains if the bucket has exploded
 
         grain_pos = sugar_grain.body.position
-
         # Get bucket boundaries
         left = self.left_wall.a[0]
         right = self.right_wall.a[0]

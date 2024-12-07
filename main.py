@@ -20,6 +20,7 @@ import message_display
 import static_bucket
 import sound
 import HUD
+from static_bucket import Static_Bucket
 from bucket import Bucket
 
 
@@ -38,8 +39,7 @@ class Game:
         
         # Create sound
         self.sound = sound.Sound()
-        # Initialize HUD
-       
+      
         # Make current position of spout
         self.current_spout = 0
         self.level_complete = False
@@ -70,6 +70,7 @@ class Game:
         self.intro_image = pg.transform.scale(self.intro_image, (WIDTH, int(scale_height)))  # Scale to screen resolution
         self.sound.play_background_music()
         pg.time.set_timer(LOAD_NEW_LEVEL, 2000)  # Load in 2 seconds
+        
 
     def load_level(self, levelnumber=0):
         # Destroy any current game objects
@@ -81,8 +82,8 @@ class Game:
             item.delete() 
         for item in self.statics:
             item.delete() 
-        #for item in self.Multiple_spout:
-            #item.delete()
+        for item in self.Multiple_spout:
+            item.delete()
         
         self.sugar_grains = []
         self.drawing_lines = []  # Clear the list
@@ -193,6 +194,10 @@ class Game:
             for grain in self.sugar_grains:
                 for bucket in self.buckets:
                     bucket.collect(grain)
+
+            for grain in self.sugar_grains:
+                for staticbucket in self.Static_buckets:
+                    staticbucket.collect(grain)
                 
             # Drop sugar if needed
             if self.level_grain_dropping:
@@ -202,6 +207,10 @@ class Game:
                     self.sugar_grains.append(new_sugar)
                     if (self.total_sugar_count - len(self.sugar_grains)) == 0 :
                         self.current_spout += 1
+                        self.total_sugar_count = self.Static_buckets[self.current_spout].count
+
+                        if self.current_spout >= len(self.Multiple_spout):
+                            self.current_spout = 0  # Loop back to the first spout
 
                 else:
                     new_sugar = sugar_grain.sugar_grain(self.space, self.level.data["spout_x"], self.level.data["spout_y"], 0.1)
@@ -214,33 +223,34 @@ class Game:
             
     
     def draw_hud(self):
+       #self.hud.draw_hud()
         """Draw the HUD displaying the number of grains."""
-        # Prepare the text surface
-        if self.total_sugar_count:
-            #level_surface = self.font.render(f'Level{self.current_level}', True, (255, 255, 255))
-            #text_surface = self.font.render(f'{self.total_sugar_count - len(self.sugar_grains)}', True, (255, 255, 255))
-            
-            level = HUD.hud(f'Level{self.current_level}',10,10)
-            level.set_up()
-            # for i in range(len(self.buckets)-1, -1, -1):
-            #     bucket = self.buckets[i]
-            #     bucket_count = self.font.render(f'{bucket.count}', True, (255, 255, 255))
-            #     for nb in self.level.data['buckets']:
-            #         self.screen.blit(bucket_count,(nb["x"], HEIGHT- nb["y"]))
+        if self.total_sugar_count is not None:
+            # Render the current level text
+            level_surface = self.font.render(f'Level {self.current_level}', True, (255, 255, 255))
+            self.screen.blit(level_surface, (10, 10))
 
-            # for i in range(len(self.Static_buckets)-1, -1, -1):
-            #     bucket = self.Static_buckets[i]
-            #     bucket_count = self.font.render(f'{bucket.count}', True, (255, 255, 255))
-            #     for nb in self.level.data['Static_buckets']:
-            #         self.screen.blit(bucket_count,(nb["x"], HEIGHT- nb["y"]))
+            # Render the remaining sugar grains text
+            remaining_grains = self.total_sugar_count - len(self.sugar_grains)
+            sugar_surface = self.font.render(f'Sugar Left: {remaining_grains}', True, (255, 255, 255))
+            self.screen.blit(sugar_surface, (10, 50))
+
+            # Display the count for each bucket (dynamic buckets)
+            for bucket, bucket_data in zip(self.buckets, self.level.data['buckets']):
+                bucket_status = self.font.render(f'{bucket.count}/{bucket.needed_sugar}', True, (255, 255, 255))
+                self.screen.blit(bucket_status, (bucket_data['x'] - 20, HEIGHT - bucket_data['y'] - 30))
+
+            # Display the count for each static bucket (if any)
+            for i in range (len(self.Static_buckets)):
+                staticbucket = self.Static_buckets[i]
+                for bucket, bucket_data in zip(self.Static_buckets, self.level.data.get('Static_buckets', [])):
+                    bucket_status = self.font.render(f'{staticbucket.count}', True, (255, 255, 255))
+                    self.screen.blit(bucket_status, (bucket_data['x'] - 20, HEIGHT - bucket_data['y'] - 30))
 
 
-            # Draw the text surface on the screen
-            #self.screen.blit(text_surface, (10, 40)) # sugar count left
-            #self.screen.blit(level_surface,(10,10)) #Level
-            
       
-        
+      
+
             
 
     def draw(self):
