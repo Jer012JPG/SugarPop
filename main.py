@@ -20,6 +20,7 @@ import message_display
 import static_bucket
 import sound
 import HUD
+from bucket import Bucket
 
 
 class Game:
@@ -33,12 +34,12 @@ class Game:
         self.font = pg.font.SysFont(None, 36)  # Default font, size 36
 
         # Create a Pymunk space with gravity
-        self.current_level = 3
+        self.current_level = 2
         
         # Create sound
         self.sound = sound.Sound()
         # Initialize HUD
-        
+       
         # Make current position of spout
         self.current_spout = 0
         self.level_complete = False
@@ -216,25 +217,27 @@ class Game:
         """Draw the HUD displaying the number of grains."""
         # Prepare the text surface
         if self.total_sugar_count:
-            level_surface = self.font.render(f'Level{self.current_level}', True, (255, 255, 255))
-            text_surface = self.font.render(f'{self.total_sugar_count - len(self.sugar_grains)}', True, (255, 255, 255))
+            #level_surface = self.font.render(f'Level{self.current_level}', True, (255, 255, 255))
+            #text_surface = self.font.render(f'{self.total_sugar_count - len(self.sugar_grains)}', True, (255, 255, 255))
             
-            for i in range(len(self.buckets)-1, -1, -1):
-                bucket = self.buckets[i]
-                bucket_count = self.font.render(f'{bucket.count}', True, (255, 255, 255))
-                for nb in self.level.data['buckets']:
-                    self.screen.blit(bucket_count,(nb["x"], HEIGHT- nb["y"]))
+            level = HUD.hud(f'Level{self.current_level}',10,10)
+            level.set_up()
+            # for i in range(len(self.buckets)-1, -1, -1):
+            #     bucket = self.buckets[i]
+            #     bucket_count = self.font.render(f'{bucket.count}', True, (255, 255, 255))
+            #     for nb in self.level.data['buckets']:
+            #         self.screen.blit(bucket_count,(nb["x"], HEIGHT- nb["y"]))
 
-            for i in range(len(self.Static_buckets)-1, -1, -1):
-                bucket = self.Static_buckets[i]
-                bucket_count = self.font.render(f'{bucket.count}', True, (255, 255, 255))
-                for nb in self.level.data['Static_buckets']:
-                    self.screen.blit(bucket_count,(nb["x"], HEIGHT- nb["y"]))
+            # for i in range(len(self.Static_buckets)-1, -1, -1):
+            #     bucket = self.Static_buckets[i]
+            #     bucket_count = self.font.render(f'{bucket.count}', True, (255, 255, 255))
+            #     for nb in self.level.data['Static_buckets']:
+            #         self.screen.blit(bucket_count,(nb["x"], HEIGHT- nb["y"]))
 
 
             # Draw the text surface on the screen
-            self.screen.blit(text_surface, (10, 40)) # sugar count left
-            self.screen.blit(level_surface,(10,10)) #Level
+            #self.screen.blit(text_surface, (10, 40)) # sugar count left
+            #self.screen.blit(level_surface,(10,10)) #Level
             
       
         
