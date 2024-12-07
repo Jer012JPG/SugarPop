@@ -17,10 +17,8 @@ import sugar_grain
 import bucket
 import level
 import message_display
-import static_bucket
 import sound
-import HUD
-from static_bucket import Static_Bucket
+
 from bucket import Bucket
 
 
@@ -35,26 +33,22 @@ class Game:
         self.font = pg.font.SysFont(None, 36)  # Default font, size 36
 
         # Create a Pymunk space with gravity
-        self.current_level = 2
-        
+        self.current_level = 3
+        self.tornado_active = False
         # Create sound
         self.sound = sound.Sound()
-      
+        self.action_active = False
         # Make current position of spout
         self.current_spout = 0
         self.level_complete = False
         self.space = pymunk.Space()
-        self.space.gravity = (0, -4.8)  # Gravity pointing downwards in Pymunk's coordinate system
+        self.space.gravity = (0, -9.8)  # Gravity pointing downwards in Pymunk's coordinate system
         # Iterations defaults to 10. Higher is more accurate collison detection
         self.space.iterations = 30 
         self.is_paused = False
         self.drawing_lines = []
         self.sugar_grains = []
         self.buckets = []
-        # Define Static Bucket
-        self.Static_buckets = []
-        # Define Multiple Spout
-        self.Multiple_spout = []
         self.statics = []
         self.total_sugar_count = None
         self.level_spout_position = None
@@ -82,15 +76,12 @@ class Game:
             item.delete() 
         for item in self.statics:
             item.delete() 
-        for item in self.Multiple_spout:
-            item.delete()
         
         self.sugar_grains = []
         self.drawing_lines = []  # Clear the list
         self.buckets = []
         self.statics = []
-        self.Static_buckets = []
-        self.Multiple_spout = []
+      
  
         new_level = LEVEL_FILE_NAME.replace("X", str(levelnumber))
         self.level = level.Level(new_level)
@@ -100,19 +91,14 @@ class Game:
             return False
         else:  # Do final steps to start the level
             self.level_grain_dropping = False
-            #self.level_spout_position = (self.level.data['spout_x'], self.level.data['spout_y'])
+            self.level_spout_position = (self.level.data['spout_x'], self.level.data['spout_y'])
             self.build_main_walls()
 
             # Load buckets
             for nb in self.level.data['buckets']:
                 self.buckets.append(bucket.Bucket(self.space, nb['x'], nb['y'], nb['width'], nb['height'], nb['needed_sugar']))
             # Load static buckets
-            if self.current_level == 4:
-                for nb in self.level.data["Static_buckets"]:
-                    self.Static_buckets.append(static_bucket.Static_Bucket(self.space, nb['x'], nb['y'], nb['width'], nb['height']))
-                # Load Multiple Spout
-                for nb in self.level.data["Multiple_Spout"]:
-                    self.Multiple_spout.append((nb['x'], nb['y']))
+            
             # Load static items
             for nb in self.level.data['statics']:
                 self.statics.append(static_item.StaticItem(self.space, nb['x1'], nb['y1'], nb['x2'], nb['y2'], nb['color'], nb['line_width'], nb['friction'], nb['restitution']))
@@ -181,6 +167,7 @@ class Game:
                    bucket.explode(self.sugar_grains)
                    self.sound.play_bucket_explosion()
                    del self.buckets[i]
+                   del self.level.data['buckets'][i] 
                     # If all the buckets are gone, level up!
                    if not self.level_complete and self.check_all_buckets_exploded():
                         self.sound.play_level_win_sound()
@@ -195,35 +182,17 @@ class Game:
                 for bucket in self.buckets:
                     bucket.collect(grain)
 
-            for grain in self.sugar_grains:
-                for staticbucket in self.Static_buckets:
-                    staticbucket.collect(grain)
                 
-            # Drop sugar if needed
             if self.level_grain_dropping:
-                if self.current_level == 4:
-                    # Create new sugar to drop
-                    new_sugar = sugar_grain.sugar_grain(self.space, self.Multiple_spout[self.current_spout][0], self.Multiple_spout[self.current_spout][1], 0.1)
-                    self.sugar_grains.append(new_sugar)
-                    if (self.total_sugar_count - len(self.sugar_grains)) == 0 :
-                        self.current_spout += 1
-                        self.total_sugar_count = self.Static_buckets[self.current_spout].count
-
-                        if self.current_spout >= len(self.Multiple_spout):
-                            self.current_spout = 0  # Loop back to the first spout
-
-                else:
-                    new_sugar = sugar_grain.sugar_grain(self.space, self.level.data["spout_x"], self.level.data["spout_y"], 0.1)
-                    self.sugar_grains.append(new_sugar)
+                # Create new sugar to drop
+                new_sugar = sugar_grain.sugar_grain(self.space, self.level_spout_position[0], self.level_spout_position[1], 0.1)
+                self.sugar_grains.append(new_sugar)
                 # Check if it's time to stop
                 if len(self.sugar_grains) >= self.total_sugar_count:
                     self.level_grain_dropping = False
-            
          
             
-    
     def draw_hud(self):
-       #self.hud.draw_hud()
         """Draw the HUD displaying the number of grains."""
         if self.total_sugar_count is not None:
             # Render the current level text
@@ -235,22 +204,11 @@ class Game:
             sugar_surface = self.font.render(f'Sugar Left: {remaining_grains}', True, (255, 255, 255))
             self.screen.blit(sugar_surface, (10, 50))
 
-            # Display the count for each bucket (dynamic buckets)
+            # Display the count for each remaining bucket
             for bucket, bucket_data in zip(self.buckets, self.level.data['buckets']):
                 bucket_status = self.font.render(f'{bucket.count}/{bucket.needed_sugar}', True, (255, 255, 255))
                 self.screen.blit(bucket_status, (bucket_data['x'] - 20, HEIGHT - bucket_data['y'] - 30))
-
-            # Display the count for each static bucket (if any)
-            for i in range (len(self.Static_buckets)):
-                staticbucket = self.Static_buckets[i]
-                for bucket, bucket_data in zip(self.Static_buckets, self.level.data.get('Static_buckets', [])):
-                    bucket_status = self.font.render(f'{staticbucket.count}', True, (255, 255, 255))
-                    self.screen.blit(bucket_status, (bucket_data['x'] - 20, HEIGHT - bucket_data['y'] - 30))
-
-
-      
-      
-
+        
             
 
     def draw(self):
@@ -264,14 +222,6 @@ class Game:
     
         for bucket in self.buckets:
             bucket.draw(self.screen)
-
-        for Static_bucket in self.Static_buckets:
-            Static_bucket.draw(self.screen)
-        
-        # Draw Multiple Spout
-        #for Multiple_spout in self.Multiple_spout:
-            #Multiple_spout.draw(self.screen)
-
 
         # Draw each sugar grain
         for grain in self.sugar_grains:
@@ -289,15 +239,15 @@ class Game:
         for static in self.statics:
             static.draw(self.screen)
 
-        # Draw the nozzle (Remember to subtract y from the height)
+          # Draw the nozzle (Remember to subtract y from the height)
         if self.level_spout_position:
             pg.draw.line(
                 self.screen, 
-                (255, 265, 265), 
-                (self.Multiple_spout[self.current_spout][0], self.Multiple_spout[self.current_spout][1] - 10), 
-                (self.Multiple_spout[self.current_spout][0], HEIGHT - self.Multiple_spout[self.current_spout][1]), 
-                10)
-        
+                (255, 165, 144), 
+                (self.level_spout_position[0], HEIGHT - self.level_spout_position[1] - 10), 
+                (self.level_spout_position[0], HEIGHT - self.level_spout_position[1]), 
+                5
+            )
         # Draw the heads-up display
         self.draw_hud()
 
@@ -365,8 +315,37 @@ class Game:
                 else:
                     if self.current_level == 3 :
                         self.message_display.show_message(f"Level {self.current_level} Start! PINK Is Bouncy !!", 2)
+                    elif self.current_level == 4:
+                        self.message_display.show_message( "TORNADO ACTIVE USING ARROW!", 4)
                     else:
                         self.message_display.show_message(f"Level {self.current_level} Start!", 2)
+
+            # Start Tornado with 'T' key
+            elif event.type == pg.KEYDOWN and event.key == pg.K_RIGHT and not self.tornado_active:
+                self.tornado_active = True
+                self.space.gravity = (5, 3)  # Tornado effect
+                pg.time.set_timer(TORNADOR, 2000)  # Schedule the Tornado to stop after 2 seconds
+
+            # Stop Tornado effect
+            elif event.type == TORNADOR:
+                self.tornado_active = False
+                self.space.gravity = (0,-9.8)   # Reset gravity
+                pg.time.set_timer(TORNADOR, 0) 
+
+             # Start Tornado with 'T' key
+            elif event.type == pg.KEYDOWN and event.key == pg.K_LEFT and not self.tornado_active:
+                self.tornado_active = True
+                self.space.gravity = (-5, 3)  # Tornado effect
+                pg.time.set_timer(TORNADOL, 2000)  # Schedule the Tornado to stop after 2 seconds
+
+            # Stop Tornado effect
+            elif event.type == TORNADOL:
+                self.tornado_active = False
+                self.space.gravity = (0,-9.8)   # Reset gravity
+                pg.time.set_timer(TORNADOL, 0) 
+
+            
+                
                     
     def run(self):
         '''Run the main game loop'''
