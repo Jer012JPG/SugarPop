@@ -177,11 +177,16 @@ class Game:
                         pg.time.set_timer(LOAD_NEW_LEVEL, 2000)  # Schedule next level load
                    else:
                     bucket.count_reset()
-            # Count the grains in the un-exploded buckets
+            grains_to_remove = []  # 
             for grain in self.sugar_grains:
                 for bucket in self.buckets:
-                    bucket.collect(grain)
+                    if bucket.collect(grain):  
+                        grains_to_remove.append(grain)
+                        break  
 
+            # Remove collected grains
+            for grain in grains_to_remove:
+                self.sugar_grains.remove(grain)
                 
             if self.level_grain_dropping:
                 # Create new sugar to drop
@@ -205,10 +210,11 @@ class Game:
             self.screen.blit(sugar_surface, (10, 50))
 
             # Display the count for each remaining bucket
-            for bucket, bucket_data in zip(self.buckets, self.level.data['buckets']):
-                bucket_status = self.font.render(f'{bucket.count}/{bucket.needed_sugar}', True, (255, 255, 255))
-                self.screen.blit(bucket_status, (bucket_data['x'] - 20, HEIGHT - bucket_data['y'] - 30))
-        
+            if self.current_level <= 4:
+                for bucket, bucket_data in zip(self.buckets, self.level.data['buckets']):
+                    bucket_status = self.font.render(f'{bucket.count}/{bucket.needed_sugar}', True, (255, 255, 255))
+                    self.screen.blit(bucket_status, (bucket_data['x'] - 20, HEIGHT - bucket_data['y'] - 30))
+            
             
 
     def draw(self):
